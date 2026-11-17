@@ -17,10 +17,21 @@ def samples(data, as_of):
 def grouped(data, as_of):
     groups = {}
     for row in samples(data, as_of):
-        key = (row["day"], row["line"], row["origin"], row["grade"])
-        group = groups.setdefault(key, {"checked_kg": 0, "damaged_kg": 0, "samples": []})
+        key = (row["day"], row["line"], row["origin"], row["grade"], row.get("shift", "default"))
+        group = groups.setdefault(key, {"checked_kg": 0, "damaged_kg": 0, "samples": [],
+                                        "diameter_values": []})
         group["checked_kg"] += row["checked_kg"]
         group["damaged_kg"] += row["damaged_kg"]
         group["samples"].append(row["sample_id"])
-    return [{"day": key[0], "line": key[1], "origin": key[2], "grade": key[3], **row,
-             "damage_rate": row["damaged_kg"] / row["checked_kg"]} for key, row in sorted(groups.items())]
+        if row.get("mean_diameter_mm") is not None:
+            group["diameter_values"].append(row["mean_diameter_mm"])
+    result = []
+    for key, row in sorted(groups.items()):
+        values = row.pop("diameter_values")
+        result.append({
+            "day": key[0], "line": key[1], "origin": key[2], "grade": key[3], "shift": key[4],
+            "mean_diameter_mm": sum(values) / len(values) if values else None,
+            **row,
+            "damage_rate": row["damaged_kg"] / row["checked_kg"],
+        })
+    return result

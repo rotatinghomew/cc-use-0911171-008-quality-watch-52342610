@@ -8,7 +8,9 @@
 
 - `measurements.py`：抽检分母和测量更正。
 - `reference.py`：可比批群及参照资格。
-- `incidents.py`：事件跟踪和人工复核。
+- `incidents.py`：固定规则事件跟踪和人工复核（安全红线）。
+- `monitoring.py`：分层漂移监测——同层参照、样本量自适应检验、FDR 误报控制。
+- `events.py`：漂移事件引擎——跨窗口/跨指标聚合、学习护栏、证据修订与冲突留痕。
 
 ## 运行
 
@@ -36,6 +38,6 @@ docker run --rm --network none quality-watch:local
 
 样例记录全部为本地合成数据，不代表真实农户、市场成交或实际试验结果。日期采用 `YYYY-MM-DD`，有记录时点的条目以 `recorded_at` 表示系统已知日期；同一业务键存在多个修订时选已知范围内最新记录，同日由 `revision` 区分，`withdrawn` 表示撤回。可修改样例验证业务边界，不能将演示数据的统计方向视为真实结论。
 
-测量修订按sample_id和recorded_at选择，可用withdrawn撤回。checked_kg为抽检分母，不是整批货重。当前警报按日期、产线、产地、等级形成独立固定规则提醒，复核只记录意见，不自动调整参照；历史参考描述不等同于统计漂移检验。
+测量修订按sample_id和recorded_at选择，可用withdrawn撤回。checked_kg为抽检分母，不是整批货重。固定规则警报按日期、产线、产地、等级形成独立提醒，作为安全红线保留；漂移监测按产线×产地×等级×班次分层，只与同层历史比较，样本量不足给 `evidence_insufficient` 而非确认正常。复核只追加记录；未经 `normal_batch` 放行的事件证据保持隔离，不会被自动学成正常，复核与统计冲突时只标记不覆盖。设计依据见 `docs/monitoring_design.md`，接口契约见 `docs/contracts.md`。
 
 接口细节见 `docs/contracts.md`。测试使用各自的内存副本和临时目录，不修改原始数据或依赖固定端口。
